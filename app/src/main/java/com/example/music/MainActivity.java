@@ -17,6 +17,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.provider.MediaStore;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -28,6 +29,7 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 
 import java.util.ArrayList;
+import java.util.Random;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -44,7 +46,6 @@ public class MainActivity extends AppCompatActivity {
     private Handler seekHandler;
     private SeekBar sb;
 
-    //MUST FIX RESUME
     private int time;
 
     @Override
@@ -214,54 +215,41 @@ public class MainActivity extends AppCompatActivity {
         seekHandler.postDelayed(runnable, 2);
     }
 
-    //Contains Bug where pause goes back to zero
     public void playButtonPausePressed() {
         TextView songName = findViewById(R.id.songName);
         ImageButton pp = findViewById(R.id.play);
         //Used to play random song when pressed play and no music is playing
-        if (!mediaPlayer.isPlaying() && songName.getText() != "No Song Playing") {
-            //Used to generate random number
-            int randomNum = (int) Math.random() * holdSongs.size();
-            //If there are songs
-            if (randomNum != 0) {
-                //Retrieve song information from that index
-                Songs play = holdSongs.get(randomNum);
-                //Set the song name
-                setSongName(randomNum);
-                //Convert the path to URI
-                Uri myUri = Uri.parse(play.getPath());
-                //Play the song at the URI
-                playNewSong(myUri);
-                //Update cover art of the path
-                setCoverArt(play.getPath());
-                //Update to display pause button
-                pp.setImageResource(R.drawable.pause);
-                try {
-                    mediaPlayer.setDataSource(MainActivity.this, myUri);
-                    mediaPlayer.prepare();
-                    mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-                    setSeekBar();
-                    mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
-                        @Override
-                        public void onPrepared(MediaPlayer mp) {
-                            mp.start();
-                        }
-                    });
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }
         //Used to control the pause button
-        else if (mediaPlayer.isPlaying()) {
+        if (mediaPlayer.isPlaying()) {
             time = mediaPlayer.getCurrentPosition();
             mediaPlayer.pause();
             pp.setImageResource(R.drawable.play);
         }
         //Used to resume song playing
-        else {
+        else if(!mediaPlayer.isPlaying() && time > 0) {
             mediaPlayer.seekTo(time);
             mediaPlayer.start();
+            pp.setImageResource(R.drawable.pause);
+        }
+        //Plays random song when play button is pressed and no song is playing
+        else if (!mediaPlayer.isPlaying() && time == 0) {
+            //If there are songs
+            if (holdSongs.size()>0) {
+                int randomNum = (new Random().nextInt(holdSongs.size()));
+                //Get the position of the list clicked
+                Songs newSongs = holdSongs.get(randomNum);
+                //Update seek bar
+                setSeekBar();
+                //Update song name
+                setSongName(randomNum);
+                //Get the path of the song
+                Uri myUri = Uri.parse(newSongs.getPath());
+                playNewSong(myUri);
+                //Update oover art
+                setCoverArt(newSongs.getPath());
+                //Update button to pause
+                pp.setImageResource(R.drawable.pause);
+            }
         }
     }
 
@@ -318,7 +306,7 @@ public class MainActivity extends AppCompatActivity {
                     //Get the path of the song
                     Uri myUri = Uri.parse(newSongs.getPath());
                     playNewSong(myUri);
-                    //Update ocver art
+                    //Update oover art
                     setCoverArt(newSongs.getPath());
                     //Update button to pause
                     pp.setImageResource(R.drawable.pause);
